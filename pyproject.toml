@@ -1,6 +1,6 @@
 [project]
-name = "zendriver"
-version = "0.7.1"
+name = "guimauve-driver"
+version = "1.7.1"
 description = "A blazing fast, async-first, undetectable webscraping/web automation framework"
 readme = "README.md"
 authors = [{ name = "Stephan Lensky", email = "oss@slensky.com" }]
@@ -73,3 +73,7 @@ module = [
     "asyncio_atexit",
 ]
 ignore_missing_imports = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["zendriver"]
+
