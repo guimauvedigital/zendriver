@@ -467,11 +467,13 @@ class Connection(metaclass=CantTouchThis):
             tx = Transaction(cdp_obj)
             tx.connection = self
             if not self.mapper:
+                logger.debug(f"no mapper, creating new count. mapper={self.mapper}")
                 self.__count__ = itertools.count(0)
             tx.id = next(self.__count__)
             self.mapper.update({tx.id: tx})
             if not _is_update:
                 await self._register_handlers()
+            logger.debug(f"send() with id={tx.id}, mapper is now {self.mapper}")
             await self.websocket.send(tx.message)
             try:
                 return await tx
@@ -643,10 +645,12 @@ class Listener:
             if self.connection.websocket is None:
                 raise ValueError("no websocket connection")
 
+            logger.debug("listener_loop running for %s", self.connection)
             try:
                 msg = await asyncio.wait_for(
                     self.connection.websocket.recv(), self.time_before_considered_idle
                 )
+                logger.debug("got message from websocket in %s: %s", self.connection, msg)
             except asyncio.TimeoutError:
                 self.idle.set()
                 # breathe
@@ -667,6 +671,7 @@ class Listener:
             if not self.running:
                 # if we have been cancelled or otherwise stopped running
                 # break this loop
+                logger.debug("listener_loop no longer running (cancelled or stoped) for %s", self.connection)
                 break
 
             # since we are at this point, we are not "idle" anymore.
@@ -693,6 +698,7 @@ class Listener:
                             tx = maybe_tx
                             tx(**message)
                         continue
+                    logger.debug("got answer for unknown message id %s in %s", message["id"], self.connection)
             else:
                 # probably an event
                 try:

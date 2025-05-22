@@ -1,6 +1,6 @@
 [project]
 name = "guimauve-driver"
-version = "1.7.1"
+version = "1.7.2"
 description = "A blazing fast, async-first, undetectable webscraping/web automation framework"
 readme = "README.md"
 authors = [{ name = "Stephan Lensky", email = "oss@slensky.com" }]
