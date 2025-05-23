@@ -105,6 +105,16 @@ class Transaction(asyncio.Future):
             return True
         return False
 
+    @property
+    def read_exception(self):
+        """
+        :return: the exception if any
+        """
+        try:
+            return self.exception()
+        except Exception as e:
+            return e
+
     def __call__(self, **response: dict):
         """
         parsed the response message and marks the future
@@ -138,7 +148,7 @@ class Transaction(asyncio.Future):
             f"success: {success}"
         )
         if self.has_exception:
-            fmt += f"\n\terror: {self.exception()}"
+            fmt += f"\n\terror: {self.read_exception}"
         fmt += ">"
         return fmt
 
