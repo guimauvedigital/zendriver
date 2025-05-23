@@ -135,8 +135,11 @@ class Transaction(asyncio.Future):
             f"<{self.__class__.__name__}\n\t"
             f"method: {self.method}\n\t"
             f"status: {status}\n\t"
-            f"success: {success}>"
+            f"success: {success}"
         )
+        if self.has_exception:
+            fmt += f"\n\terror: {self.exception()}"
+        fmt += ">"
         return fmt
 
 
@@ -696,6 +699,7 @@ class Listener:
                         maybe_tx = self.connection.mapper.get(-2)
                         if maybe_tx:
                             tx = maybe_tx
+                            logger.debug("got answer for %s (message_id:%d)", tx, message["id"])
                             tx(**message)
                         continue
                     logger.debug("got answer for unknown message id %s in %s", message["id"], self.connection)
