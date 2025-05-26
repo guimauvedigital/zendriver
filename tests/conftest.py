@@ -1,10 +1,13 @@
+import asyncio
 import logging
 import os
 import signal
+import sys
 from contextlib import AbstractAsyncContextManager
 from enum import Enum
 from threading import Event
 from typing import AsyncGenerator
+import functools
 
 import pytest
 
@@ -47,6 +50,7 @@ class CreateBrowser(AbstractAsyncContextManager):
         browser_args: list[str] | None = None,
         browser_connection_max_tries: int = 15,
         browser_connection_timeout: float = 3.0,
+        disable_asyncio_subprocess: bool = False,
     ):
         args = []
         if not headless and TestConfig.USE_WAYLAND:
@@ -63,6 +67,7 @@ class CreateBrowser(AbstractAsyncContextManager):
             browser_args=args,
             browser_connection_max_tries=browser_connection_max_tries,
             browser_connection_timeout=browser_connection_timeout,
+            disable_asyncio_subprocess=disable_asyncio_subprocess,
         )
 
         self.browser: zd.Browser | None = None
@@ -82,13 +87,27 @@ class CreateBrowser(AbstractAsyncContextManager):
 
 
 @pytest.fixture
-def create_browser() -> type[CreateBrowser]:
-    return CreateBrowser
+def create_browser(
+    disable_asyncio_subprocess: bool,
+) -> type[CreateBrowser] | functools.partial[CreateBrowser]:
+    if disable_asyncio_subprocess and sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())  # type: ignore
+
+    return functools.partial(
+        CreateBrowser, disable_asyncio_subprocess=disable_asyncio_subprocess
+    )
 
 
 @pytest.fixture(params=TestConfig.BROWSER_MODE.fixture_params)
 def headless(request: pytest.FixtureRequest) -> bool:
     return request.param["headless"]
+
+
+@pytest.fixture(
+    params=[{"disable_asyncio_subprocess": False}, {"disable_asyncio_subprocess": True}]
+)
+def disable_asyncio_subprocess(request: pytest.FixtureRequest) -> bool:
+    return request.param["disable_asyncio_subprocess"]
 
 
 @pytest.fixture
@@ -123,4 +142,9 @@ def handle_next_test(signum, frame):
     NEXT_TEST_EVENT.set()
 
 
-signal.signal(signal.SIGUSR1, handle_next_test)
+if hasattr(signal, "SIGUSR1"):
+    signal.signal(signal.SIGUSR1, handle_next_test)
+else:
+    logger.warning(
+        "SIGUSR1 not available on this platform, handle_next_test will not be called."
+    )
