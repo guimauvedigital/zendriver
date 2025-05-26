@@ -145,11 +145,8 @@ class Transaction(asyncio.Future):
             f"<{self.__class__.__name__}\n\t"
             f"method: {self.method}\n\t"
             f"status: {status}\n\t"
-            f"success: {success}"
+            f"success: {success}>"
         )
-        if self.has_exception:
-            fmt += f"\n\terror: {self.read_exception}"
-        fmt += ">"
         return fmt
 
 
@@ -658,12 +655,10 @@ class Listener:
             if self.connection.websocket is None:
                 raise ValueError("no websocket connection")
 
-            logger.debug("listener_loop running for %s", self.connection)
             try:
                 msg = await asyncio.wait_for(
                     self.connection.websocket.recv(), self.time_before_considered_idle
                 )
-                logger.debug("got message from websocket in %s: %s", self.connection, msg)
             except asyncio.TimeoutError:
                 self.idle.set()
                 # breathe
